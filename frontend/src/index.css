@@ -1,0 +1,76 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    @apply bg-canvas text-ink font-sans antialiased;
+    background-image:
+      radial-gradient(60rem 60rem at 85% -10%, rgba(192, 90, 53, 0.06), transparent 60%),
+      radial-gradient(50rem 50rem at -10% 20%, rgba(109, 127, 97, 0.07), transparent 55%);
+    background-attachment: fixed;
+  }
+
+  ::selection {
+    @apply bg-terracotta-200 text-ink;
+  }
+}
+
+@layer components {
+  .container-page {
+    @apply mx-auto w-full max-w-6xl px-5 sm:px-8;
+  }
+
+  .surface {
+    @apply rounded-2xl border border-line bg-paper shadow-card;
+  }
+
+  .focus-ring {
+    @apply outline-none ring-offset-2 ring-offset-paper focus-visible:ring-2 focus-visible:ring-terracotta-400;
+  }
+}
+
+@layer utilities {
+  /* Custom range input styling for the before/after comparison slider handle. */
+  .comparison-range {
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    cursor: ew-resize;
+  }
+
+  .comparison-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 44px;
+    height: 100%;
+    background: transparent;
+    cursor: ew-resize;
+  }
+
+  .comparison-range::-moz-range-thumb {
+    width: 44px;
+    height: 100%;
+    border: none;
+    background: transparent;
+    cursor: ew-resize;
+  }
+
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+}

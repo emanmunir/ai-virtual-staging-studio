@@ -1,0 +1,47 @@
+# AI Virtual Staging Studio — local orchestration.
+#
+# Usage:
+#   docker compose up --build
+#
+# Passing the Gemini API key:
+#   The backend reads secrets from ./backend/.env via `env_file` below.
+#   1. cp backend/.env.example backend/.env
+#   2. add:  GEMINI_API_KEY=your-key-here
+#   The .env file is gitignored and never baked into the image.
+#   With no key present, the backend runs in zero-key mock mode.
+
+services:
+  backend:
+    build:
+      context: ./backend
+    container_name: avss-backend
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    # Secrets/config are loaded from ./backend/.env (gitignored, never committed).
+    env_file:
+      - ./backend/.env
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Baked into the static build so the SPA knows where the API lives.
+        VITE_API_URL: http://localhost:8000
+    container_name: avss-frontend
+    environment:
+      # Also provided at runtime for `vite preview`.
+      VITE_API_URL: http://localhost:8000
+    ports:
+      # Host 4173 -> container 4173 (vite preview default).
+      - "4173:4173"
+    depends_on:
+      - backend
+    restart: unless-stopped
