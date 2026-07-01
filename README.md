@@ -173,7 +173,11 @@ curl -X POST http://localhost:8000/api/stage \
 
 ---
 
-## Screenshots
+## Screenshots & demo
+
+**▶️ Live demo** — upload a room photo, run real Gemini staging, and drag the handle to compare before/after (recorded from the running app; an MP4 is in [`docs/staging-demo.mp4`](docs/staging-demo.mp4)):
+
+![Virtual Staging Studio — live demo](docs/staging-demo.gif)
 
 **The app in action** — upload a room photo, choose a mode and interior style, and drag the handle to compare the original against the staged result:
 
