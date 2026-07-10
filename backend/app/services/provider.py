@@ -39,12 +39,22 @@ class BaseProvider(abc.ABC):
     name: str = "base"
 
     @abc.abstractmethod
-    def edit_image(self, image: Image.Image, prompt: str) -> Image.Image:
+    def edit_image(
+        self,
+        image: Image.Image,
+        prompt: str,
+        mask: Optional[Image.Image] = None,
+    ) -> Image.Image:
         """Return a staged version of ``image`` guided by ``prompt``.
 
         Args:
             image: The source room/exterior photo as a Pillow image.
             prompt: The staging instruction to apply.
+            mask: Optional single-channel (``"L"``) mask the same size as
+                ``image``. White (255) marks the region the edit should be
+                confined to; black (0) marks the region that must stay
+                pixel-identical to the source. ``None`` means "edit the whole
+                image", the existing (unmasked) behaviour.
 
         Returns:
             The staged image as a new Pillow image.
@@ -61,11 +71,21 @@ class MockProvider(BaseProvider):
     is_mock = True
     name = "mock"
 
-    def edit_image(self, image: Image.Image, prompt: str) -> Image.Image:
-        """Return the original image with a ``PREVIEW (mock)`` watermark."""
+    def edit_image(
+        self,
+        image: Image.Image,
+        prompt: str,
+        mask: Optional[Image.Image] = None,
+    ) -> Image.Image:
+        """Return the original image with a ``PREVIEW (mock)`` watermark.
+
+        When ``mask`` is provided, the watermark is confined to the masked
+        region so the mock provider still demonstrates targeted, mask-limited
+        edits without any external API call.
+        """
         # ``prompt`` is intentionally unused: the mock does not stage anything,
         # it only demonstrates the round-trip so the UI and tests work offline.
-        return apply_preview_watermark(image)
+        return apply_preview_watermark(image, mask=mask)
 
 
 class GeminiProvider(BaseProvider):
@@ -87,17 +107,41 @@ class GeminiProvider(BaseProvider):
         self._image_model = settings.gemini_image_model
         self._client = genai.Client(api_key=settings.gemini_api_key)
 
-    def edit_image(self, image: Image.Image, prompt: str) -> Image.Image:
+    #: Appended to the prompt whenever a mask is supplied, so the model treats
+    #: the second image as a region selector rather than staging material.
+    _MASK_INSTRUCTION = (
+        " A second image is provided as an edit mask, the same size as the "
+        "source photo: white areas mark the only region you may change; black "
+        "areas must remain pixel-identical to the source photo (same colors, "
+        "objects, and lighting). Blend the edges of the edit seamlessly with "
+        "the untouched area."
+    )
+
+    def edit_image(
+        self,
+        image: Image.Image,
+        prompt: str,
+        mask: Optional[Image.Image] = None,
+    ) -> Image.Image:
         """Stage ``image`` with Gemini and return the produced image.
+
+        When ``mask`` is supplied, it is sent alongside the source image as a
+        region selector, and the prompt is extended with an explicit
+        instruction to confine edits to the masked (white) area.
 
         Raises:
             ProviderError: On any SDK/transport failure, or if the model
                 returns no image part.
         """
+        contents: list = [prompt, image]
+        if mask is not None:
+            contents[0] = prompt + self._MASK_INSTRUCTION
+            contents.append(mask.convert("L").resize(image.size))
+
         try:
             response = self._client.models.generate_content(
                 model=self._image_model,
-                contents=[prompt, image],
+                contents=contents,
             )
         except Exception as exc:  # noqa: BLE001 (surface any SDK error uniformly)
             raise ProviderError(f"Gemini image request failed: {exc}") from exc

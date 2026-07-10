@@ -93,6 +93,9 @@ export async function stagePhoto(
     form.append('instruction', instruction);
   }
   form.append('enhance', String(request.enhance));
+  if (request.mask) {
+    form.append('mask', request.mask, 'mask.png');
+  }
 
   const response = await fetch(`${API_BASE_URL}/api/stage`, {
     method: 'POST',

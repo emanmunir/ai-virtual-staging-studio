@@ -17,6 +17,7 @@ import { EmptyState } from './components/EmptyState';
 import { ErrorBanner } from './components/ErrorBanner';
 import { Header } from './components/Header';
 import { InstructionField } from './components/InstructionField';
+import { MaskCanvas } from './components/MaskCanvas';
 import { ModeSelector } from './components/ModeSelector';
 import { ResultPanel } from './components/ResultPanel';
 import { ResultSkeleton } from './components/ResultSkeleton';
@@ -45,6 +46,8 @@ export default function App() {
   const [style, setStyle] = useState<StyleId>('modern');
   const [instruction, setInstruction] = useState('');
   const [enhance, setEnhance] = useState(true);
+  const [targetedEdit, setTargetedEdit] = useState(false);
+  const [maskBlob, setMaskBlob] = useState<Blob | null>(null);
 
   // Request lifecycle.
   const [isStaging, setIsStaging] = useState(false);
@@ -107,11 +110,14 @@ export default function App() {
     setFile(selected);
     setError(null);
     setResult(null);
+    setMaskBlob(null);
   }, []);
 
   const handleClearFile = useCallback(() => {
     setFile(null);
     setResult(null);
+    setTargetedEdit(false);
+    setMaskBlob(null);
   }, []);
 
   const handleStage = useCallback(async () => {
@@ -128,6 +134,7 @@ export default function App() {
         style: styleRelevant ? style : undefined,
         instruction,
         enhance,
+        mask: targetedEdit && maskBlob ? maskBlob : undefined,
       });
       setResult(response);
     } catch (err) {
@@ -143,7 +150,17 @@ export default function App() {
     } finally {
       setIsStaging(false);
     }
-  }, [enhance, file, instruction, isStaging, mode, style, styleRelevant]);
+  }, [
+    enhance,
+    file,
+    instruction,
+    isStaging,
+    maskBlob,
+    mode,
+    style,
+    styleRelevant,
+    targetedEdit,
+  ]);
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -179,6 +196,30 @@ export default function App() {
             onClear={handleClearFile}
             disabled={isStaging}
           />
+
+          {file && previewUrl && (
+            <div className="surface space-y-4 p-5">
+              <Toggle
+                checked={targetedEdit}
+                onChange={(checked) => {
+                  setTargetedEdit(checked);
+                  if (!checked) {
+                    setMaskBlob(null);
+                  }
+                }}
+                disabled={isStaging}
+                label="Targeted edit"
+                description="Paint a mask so the edit only touches part of the photo."
+              />
+              {targetedEdit && (
+                <MaskCanvas
+                  imageUrl={previewUrl}
+                  disabled={isStaging}
+                  onMaskChange={setMaskBlob}
+                />
+              )}
+            </div>
+          )}
 
           <div className="surface space-y-5 p-5">
             <ModeSelector
