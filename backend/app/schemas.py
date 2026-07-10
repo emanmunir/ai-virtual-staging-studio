@@ -60,6 +60,10 @@ class StageResponse(BaseModel):
     mock: bool = Field(
         ..., description="True when produced by the mock provider (no API key)."
     )
+    maskApplied: bool = Field(
+        False,
+        description="True when an edit mask was supplied and honored by the provider.",
+    )
 
 
 class ErrorResponse(BaseModel):
