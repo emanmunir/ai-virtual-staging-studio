@@ -47,6 +47,14 @@ async def stage(
         None, description="Optional free-text refinement."
     ),
     enhance: bool = Form(True, description="Run best-effort prompt enhancement."),
+    mask: Optional[UploadFile] = File(
+        None,
+        description=(
+            "Optional edit mask, same aspect as `image`. White marks the "
+            "region to edit; black marks the region to leave untouched. When "
+            "omitted, the whole image is eligible for editing."
+        ),
+    ),
 ) -> StageResponse:
     """Stage an uploaded image according to ``mode``/``style``/``instruction``.
 
@@ -68,6 +76,7 @@ async def stage(
         )
 
     raw = await image.read()
+    mask_raw = await mask.read() if mask is not None else None
 
     try:
         result = run_staging(
@@ -76,9 +85,10 @@ async def stage(
             style=style,
             instruction=instruction,
             enhance=enhance,
+            mask_bytes=mask_raw,
         )
     except ImageDecodeError as exc:
-        # Bad image payload -> 422 (client error).
+        # Bad image/mask payload -> 422 (client error).
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=str(exc),
@@ -96,4 +106,5 @@ async def stage(
         originalImage=result.original_image,
         promptUsed=result.prompt_used,
         mock=result.mock,
+        maskApplied=result.mask_applied,
     )

@@ -51,6 +51,12 @@ export interface StageRequest {
   style?: StyleId;
   instruction?: string;
   enhance: boolean;
+  /**
+   * Optional edit mask, same pixel dimensions as `image` (any image type the
+   * backend can decode). White marks the region to edit; black marks the
+   * region that must stay untouched. Omit to edit the whole image.
+   */
+  mask?: Blob;
 }
 
 /** Successful response from `POST /api/stage`. */
@@ -62,6 +68,8 @@ export interface StageResponse {
   originalImage: string;
   promptUsed: string;
   mock: boolean;
+  /** True when a mask was supplied and the edit was confined to it. */
+  maskApplied: boolean;
 }
 
 /**

@@ -35,6 +35,7 @@ The result: lower cost, near-instant turnaround, and consistent quality that hel
 - **Smart prompt builder** — enhances short user instructions into detailed, staging-optimized prompts before they reach the model.
 - **Before/after comparison** — original and staged images returned together for an instant side-by-side.
 - **Declutter mode** — remove existing furniture and personal items to present a clean, neutral space.
+- **Targeted edits (mask)** — paint the exact region a staging edit should touch; everything outside the mask stays pixel-identical to the source photo.
 - **Zero-key mock mode** — run the full app end-to-end with deterministic placeholder output and **no API key**, ideal for demos, CI, and local development.
 - **Typed, documented API** — FastAPI backend with automatic OpenAPI docs at `/docs`.
 - **Modern SPA frontend** — React + TypeScript (strict) + Vite, containerized for easy deploy.
@@ -149,6 +150,8 @@ Base URL: `http://localhost:8000`
 | `POST` | `/api/stage`      | Stage a room. Accepts an image + mode/style/instruction, returns before/after. |
 | `GET`  | `/docs`           | Interactive OpenAPI (Swagger) documentation.                                |
 
+`POST /api/stage` also accepts an optional `mask` file: a black/white image, the same aspect as `image`, where white marks the region the edit is confined to and black marks the region that must stay untouched. Omit it to edit the whole photo (previous behavior). The response's `maskApplied` field reflects whether a mask was honored.
+
 Example request:
 
 ```bash
@@ -157,6 +160,13 @@ curl -X POST http://localhost:8000/api/stage \
   -F "mode=furnish" \
   -F "style=modern" \
   -F "instruction=add a sofa, coffee table, and warm lighting"
+
+# Targeted edit: only restage the region painted white in mask.png
+curl -X POST http://localhost:8000/api/stage \
+  -F "image=@living_room.jpg" \
+  -F "mask=@mask.png" \
+  -F "mode=furnish" \
+  -F "style=modern"
 ```
 
 > The exact request/response schemas are documented and browsable at `/docs`. Field names are owned by the backend service.
@@ -196,7 +206,7 @@ curl -X POST http://localhost:8000/api/stage \
 - [ ] User accounts and staged-image history.
 - [ ] Additional design styles and per-room presets (kitchen, bathroom, office).
 - [ ] Watermark-free high-resolution export tier.
-- [ ] Optional inpainting mask for targeted edits.
+- [x] Optional inpainting mask for targeted edits.
 
 ---
 
